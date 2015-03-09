@@ -22,7 +22,7 @@
       sudo_user: root
       shell: "curl -sSL https://get.rvm.io | bash --version latest stable"
     - name: clone pyenv
-      git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv
+      git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv accept_hostkey=yes
     - name: install pyenv/plugins/python-build
       sudo_user: root
       shell: "./install.sh"
