@@ -1,0 +1,2 @@
+#!/bin/sh
+/sbin/insmod /usr/lib64/asv5220_dtv.ko

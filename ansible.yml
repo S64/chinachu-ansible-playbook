@@ -2,16 +2,16 @@
 - hosts: all
   sudo: yes
   tasks:
-    - name: add epel7 repository (yum)
-      yum: name={{item}}
-      with_items:
-        - http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
-      when: ansible_pkg_mgr == 'yum' and ansible_lsb.major_release|int == 7
+#    - name: add epel7 repository (yum)
+#      yum: name={{item}}
+#      with_items:
+#        - http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+#      when: ansible_distribution == 'CentOS' and ansible_distribution_version.split('.')[0] == '7'
     - name: add epel6 repository (yum)
       yum: name={{item}}
       with_items:
         - http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-      when: ansible_pkg_mgr == 'yum' and ansible_lsb.major_release|int == 6
+      when: ansible_distribution == 'CentOS' and ansible_distribution_version.split('.')[0] == '6'
     - name: install packages
       action: "{{ansible_pkg_mgr}} name={{item}}"
       with_items:
@@ -36,6 +36,7 @@
         - yasm-devel
         - boost-devel
         - perl-ExtUtils-MakeMaker
+        - libselinux-python
       when: ansible_pkg_mgr == 'yum'
     - name: install packages (apt)
       action: "{{ansible_pkg_mgr}} name={{item}}"
@@ -57,7 +58,7 @@
       register: rvm_directory
     - name: install rvm
       shell: bash -lc "curl -sSL https://get.rvm.io | bash -s stable"
-      when: not rvm.stat.exists
+      when: not rvm_directory.stat.exists
     - name: clone pyenv (python-build)
       git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv accept_hostkey=yes
     - name: install pyenv/plugins/python-build
@@ -80,7 +81,7 @@
       copy: src=./src/nodebrew.sh dest=/etc/profile.d/nodebrew.sh owner=root group=root mode=0644
     - name: install ruby 2.2.0
       shell: bash -lc "rvm --default use --install 2.2.0@global"
-      when: not rvm.stat.exists
+      when: not rvm_directory.stat.exists
     - name: install python 3.4.3
       shell: bash -lc "pyenv install 3.4.3"
       when: not pyenv_directory.stat.exists
@@ -110,6 +111,7 @@
         - pcsc-lite
         - pcsc-lite-devel
         - pcsc-lite-libs
+        - ccid
       when: ansible_pkg_mgr == 'yum'
     - stat: path=/usr/bin/pcsc_scan
       register: pcsc_scan_binary
@@ -159,6 +161,9 @@
       args:
         chdir: /opt/chinachu/pcsc-tools-1.4.23
       when: not pcsc_scan_binary.stat.exists
+    - name: enable pcscd
+      sudo_user: root
+      service: name=pcscd enabled=yes state=started
     - name: download arib25 (c44e16dbb0e2.zip)
       sudo_user: chinachu
       get_url: url=http://hg.honeyplanet.jp/pt1/archive/c44e16dbb0e2.zip dest=~/c44e16dbb0e2.zip
@@ -190,11 +195,23 @@
     - name: install PX-W3PE driver (asv5220_dtv.ko)
       sudo_user: root
       shell: insmod /opt/chinachu/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit/asv5220_dtv.ko
+    - name: cp asv5220_dtv.ko to /usr/lib64
+      sudo_user: root
+      shell: cp --update /opt/chinachu/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit/asv5220_dtv.ko /usr/lib64/asv5220_dtv.ko
+    - name: copy asv5220_dtv.modules
+      sudo_user: root
+      copy: src=./src/asv5220_dtv.modules dest=/etc/sysconfig/modules/asv5220_dtv.modules owner=root group=root mode=0755
     - stat: path=./src/recpt1
       delegate_to: 127.0.0.1
       register: local_recpt1_binary
     - name: copy recpt1 (binary)
-      copy: src=./src/recpt1 dest=/usr/local/bin/recpt1 owner=root group=root mode=0755 force=no
+      copy: src=./src/recpt1 dest=/usr/local/bin/recpt1 owner=root group=root mode=0755
+      when: local_recpt1_binary.stat.exists
+    - name: copy recpt1ctl (binary)
+      copy: src=./src/recpt1ctl dest=/usr/local/bin/recpt1ctl owner=root group=root mode=0755
+      when: local_recpt1_binary.stat.exists
+    - name: copy checksignal (binary)
+      copy: src=./src/checksignal dest=/usr/local/bin/checksignal owner=root group=root mode=0755
       when: local_recpt1_binary.stat.exists
     - stat: path=/usr/local/bin/recpt1
       register: recpt1_binary
