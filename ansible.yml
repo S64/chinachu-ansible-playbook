@@ -15,6 +15,8 @@
         - nmap
         - curl
         - wget
+        - git
+        - unzip
     - name: install packages (yum)
       action: "{{ansible_pkg_mgr}} name={{item}}"
       with_items:
@@ -28,6 +30,7 @@
         - readline-devel
         - yasm-devel
         - boost-devel
+        - perl-ExtUtils-MakeMaker
       when: ansible_pkg_mgr == 'yum'
     - name: install packages (apt)
       action: "{{ansible_pkg_mgr}} name={{item}}"
@@ -41,36 +44,48 @@
         - libbz2-dev
         - zlib1g-dev
         - gnupg2
-        - git
+        - libmodule-install-perl
       when: ansible_pkg_mgr == 'apt'
     - name: add rvm gpg
       shell: gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
     - name: install rvm
       shell: bash -lc "curl -sSL https://get.rvm.io | bash -s stable"
-    - name: clone pyenv
+    - name: clone pyenv (python-build)
       git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv accept_hostkey=yes
     - name: install pyenv/plugins/python-build
       shell: ./install.sh
       args:
         chdir: /opt/git/pyenv/plugins/python-build
+    - stat: path=/usr/local/pyenv
+      register: pyenv_directory
     - name: run pyenv-installer
       shell: bash -lc "curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | PYENV_ROOT=/usr/local/pyenv bash"
+      when: not pyenv_directory.stat.exists
     - name: copy /etc/profile.d/pyenv.sh
       copy: src=./src/pyenv.sh dest=/etc/profile.d/pyenv.sh owner=root group=root mode=0644
+    - stat: path=/usr/local/nodebrew
+      register: nodebrew_directory
     - name: install nodebrew
       shell: bash -lc "curl -L https://raw.githubusercontent.com/hokaccha/nodebrew/master/nodebrew | NODEBREW_ROOT=/usr/local/nodebrew perl - setup"
+      when: not nodebrew_directory.stat.exists
     - name: copy /etc/profile.d/nodebrew.sh
       copy: src=./src/nodebrew.sh dest=/etc/profile.d/nodebrew.sh owner=root group=root mode=0644
     - name: install ruby 2.2.0
       shell: bash -lc "rvm --default use --install 2.2.0@global"
     - name: install python 3.4.3
       shell: bash -lc "pyenv install 3.4.3"
+      when: not pyenv_directory.stat.exists
     - name: set global python 3.4.3
       shell: bash -lc "pyenv global 3.4.3"
+      when: not pyenv_directory.stat.exists
     - name: install node 0.12.0
       shell: bash -lc "nodebrew install-binary v0.12.0"
+      when: not nodebrew_directory.stat.exists
     - name: set node v0.12.0
       shell: bash -lc "nodebrew use v0.12.0"
+      when: not nodebrew_directory.stat.exists
+    - name: add user "chinachu"
+      user: name=chinachu system=yes shell=/bin/bash home=/opt/chinachu createhome=yes
     - name: install pcsc-tools (apt)
       action: "{{ansible_pkg_mgr}} name={{item}}"
       with_items:
@@ -80,12 +95,128 @@
         - pcsc-tools
         - pcscd
       when: ansible_pkg_mgr == 'apt'
+    - name: install pcsc-lite (yum)
+      action: "{{ansible_pkg_mgr}} name={{item}}"
+      with_items:
+        - pcsc-lite
+        - pcsc-lite-devel
+        - pcsc-lite-libs
+      when: ansible_pkg_mgr == 'yum'
+    - stat: path=/usr/bin/pcsc_scan
+      register: pcsc_scan_binary
+    - name: download pcsc-perl (pcsc-perl-1.4.13.tar.bz2)
+      sudo_user: chinachu
+      get_url: url=http://ludovic.rousseau.free.fr/softwares/pcsc-perl/pcsc-perl-1.4.13.tar.bz2 dest=~/pcsc-perl-1.4.13.tar.bz2
+      when: not pcsc_scan_binary.stat.exists
+    - name: unzip pcsc-perl (pcsc-perl-1.4.13.tar.bz2)
+      sudo_user: chinachu
+      shell: tar jxvf ~/pcsc-perl-1.4.13.tar.bz2 -C ~/
+      when: not pcsc_scan_binary.stat.exists
+    - name: perl Makefile.PL (pcsc-perl)
+      sudo_user: chinachu
+      shell: perl Makefile.PL
+      args:
+        chdir: ~/pcsc-perl-1.4.13
+      when: not pcsc_scan_binary.stat.exists
+    - name: make pcsc-perl
+      sudo_user: chinachu
+      shell: make
+      args:
+        chdir: ~/pcsc-perl-1.4.13
+      when: not pcsc_scan_binary.stat.exists
+    - name: install pcsc-perl
+      sudo_user: root
+      shell: make install
+      args:
+        chdir: /opt/chinachu/pcsc-perl-1.4.13
+      when: not pcsc_scan_binary.stat.exists
+    - name: download pcsc-tools (pcsc-tools-1.4.23.tar.gz)
+      sudo_user: chinachu
+      get_url: url=http://ludovic.rousseau.free.fr/softwares/pcsc-tools/pcsc-tools-1.4.23.tar.gz dest=~/pcsc-tools-1.4.23.tar.gz
+      when: not pcsc_scan_binary.stat.exists
+    - name: unzip pcsc-tools (pcsc-tools-1.4.23.tar.gz)
+      sudo_user: chinachu
+      shell: tar xvzf ~/pcsc-tools-1.4.23.tar.gz -C ~/
+      when: not pcsc_scan_binary.stat.exists
+    - name: make pcsc-tools
+      sudo_user: chinachu
+      shell: make
+      args:
+        chdir: ~/pcsc-tools-1.4.23
+      when: not pcsc_scan_binary.stat.exists
+    - name: install pcsc-tools
+      sudo_user: root
+      shell: make install
+      args:
+        chdir: /opt/chinachu/pcsc-tools-1.4.23
+      when: not pcsc_scan_binary.stat.exists
     - name: download arib25 (c44e16dbb0e2.zip)
-      get_url: url=http://hg.honeyplanet.jp/pt1/archive/c44e16dbb0e2.zip dest=/opt/c44e16dbb0e2.zip
-    - name: unarchive arib25 (c44e16dbb0e2.zip)
-      unarchive: src=/opt/c44e16dbb0e2.zip dest=/opt/arib25
-    - name: add user "chinachu"
-      user: name=chinachu system=yes shell=/bin/bash home=/opt/chinachu createhome=yes
+      sudo_user: chinachu
+      get_url: url=http://hg.honeyplanet.jp/pt1/archive/c44e16dbb0e2.zip dest=~/c44e16dbb0e2.zip
+    - name: mkdir ~/arib25
+      sudo_user: chinachu
+      file: dest=~/arib25 state=directory
+    - name: unzip arib25 (c44e16dbb0e2.zip)
+      sudo_user: chinachu
+      shell: unzip -n -d ~/arib25 ~/c44e16dbb0e2.zip
+    - name: make arib25
+      sudo_user: chinachu
+      shell: make
+      args:
+        chdir: ~/arib25/pt1-c44e16dbb0e2/arib25
+    - name: install arib25
+      sudo_user: root
+      shell: make install
+      args:
+        chdir: /opt/chinachu/arib25/pt1-c44e16dbb0e2/arib25
+    - name: download PX-W3PE driver
+      sudo_user: chinachu
+      get_url: url=http://plex-net.co.jp/plex/px-w3pe/PX-W3PE_LinuxDriver_ver.1.0.0.zip dest=~/PX-W3PE_LinuxDriver_ver.1.0.0.zip
+    - name: unzip PX-W3PE driver (PX-W3PE_LinuxDriver_ver.1.0.0.zip)
+      sudo_user: chinachu
+      shell: unzip -n -d ~/ ~/PX-W3PE_LinuxDriver_ver.1.0.0.zip
+    - name: unzip PX-W3PE 64bit driver (Driver/64bit.tar.gz)
+      sudo_user: chinachu
+      shell: tar xvzf ~/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit.tar.gz -C ~/PX-W3PE_LinuxDriver_ver.1.0.0/Driver
+    - name: install PX-W3PE driver (asv5220_dtv.ko)
+      sudo_user: root
+      shell: insmod /opt/chinachu/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit/asv5220_dtv.ko
+    - stat: path=./src/recpt1
+      delegate_to: 127.0.0.1
+      register: local_recpt1_binary
+    - name: copy recpt1 (binary)
+      copy: src=./src/recpt1 dest=/usr/local/bin/recpt1 owner=root group=root mode=0755 force=no
+      when: local_recpt1_binary.stat.exists
+    - stat: path=/usr/local/bin/recpt1
+      register: recpt1_binary
+    - name: clone recpt1
+      sudo_user: chinachu
+      git: repo=git://github.com/stz2012/recpt1.git dest=~/recpt1 accept_hostkey=yes
+      when: not recpt1_binary.stat.exists
+    - name: recpt1 autogen.sh
+      sudo_user: chinachu
+      shell: ./autogen.sh
+      args:
+        chdir: ~/recpt1/recpt1
+      when: not recpt1_binary.stat.exists
+    - name: recpt1 configure
+      sudo_user: chinachu
+      shell: ./configure --enable-b25
+      args:
+        chdir: ~/recpt1/recpt1
+      when: not recpt1_binary.stat.exists
+    - name: make recpt1
+      sudo_user: chinachu
+      shell: make
+      args:
+        chdir: ~/recpt1/recpt1
+      when: not recpt1_binary.stat.exists
+    - name: install recpt1
+      sudo_user: root
+      shell: make install
+      args:
+        chdir: /opt/chinachu/recpt1/recpt1
+      when: not recpt1_binary.stat.exists
     - name: clone chinachu
       sudo_user: chinachu
       git: repo=git://github.com/kanreisa/Chinachu.git dest=~/chinachu accept_hostkey=yes
