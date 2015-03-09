@@ -1,0 +1,29 @@
+---
+- sudo: yes
+- tasks:
+    - name: add epel repository (yum)
+      yum: name={{item}}
+      with_items:
+        - http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+      when: ansible_pkg_mgr == 'yum'
+    - name: install packages
+      action: "{{ansible_pkg_mgr}} name={{item}}"
+      with_items:
+        - @development
+        - yum-utils
+        - which
+        - nano
+        - tree
+        - nmap
+        - curl
+        - wget
+    - name: install rvm
+      sudo_user: root
+      shell: "curl -sSL https://get.rvm.io | bash --version latest stable"
+    - name: clone pyenv
+      git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv
+    - name: install pyenv/plugins/python-build
+      sudo_user: root
+      shell: "./install.sh"
+      args:
+        chdir: /opt/git/pyenv/plugins/python-build
