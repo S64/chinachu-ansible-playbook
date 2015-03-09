@@ -1,6 +1,5 @@
 ---
-- hosts: all
-  sudo: yes
+- sudo: yes
   tasks:
     - name: add epel repository (yum)
       yum: name={{item}}
@@ -10,7 +9,7 @@
     - name: install packages
       action: "{{ansible_pkg_mgr}} name={{item}}"
       with_items:
-        - @development
+        - "@development"
         - yum-utils
         - which
         - nano
