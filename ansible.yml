@@ -48,8 +48,11 @@
       when: ansible_pkg_mgr == 'apt'
     - name: add rvm gpg
       shell: gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+    - stat: path=/usr/local/rvm/
+      register: rvm_directory
     - name: install rvm
       shell: bash -lc "curl -sSL https://get.rvm.io | bash -s stable"
+      when: not rvm.stat.exists
     - name: clone pyenv (python-build)
       git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv accept_hostkey=yes
     - name: install pyenv/plugins/python-build
@@ -72,6 +75,7 @@
       copy: src=./src/nodebrew.sh dest=/etc/profile.d/nodebrew.sh owner=root group=root mode=0644
     - name: install ruby 2.2.0
       shell: bash -lc "rvm --default use --install 2.2.0@global"
+      when: not rvm.stat.exists
     - name: install python 3.4.3
       shell: bash -lc "pyenv install 3.4.3"
       when: not pyenv_directory.stat.exists
