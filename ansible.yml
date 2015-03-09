@@ -11,6 +11,11 @@
       action: "{{ansible_pkg_mgr}} name={{item}}"
       with_items:
         - "@development"
+        - zlib-devel
+        - bzip2-devel
+        - openssl-devel
+        - sqlite-devel
+        - readline-devel
         - yum-utils
         - which
         - nano
@@ -18,13 +23,31 @@
         - nmap
         - curl
         - wget
+    - name: add rvm gpg
+      shell: gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
     - name: install rvm
-      sudo_user: root
-      shell: "curl -sSL https://get.rvm.io | bash --version latest stable"
+      shell: curl -sSL https://get.rvm.io | bash -s stable
     - name: clone pyenv
       git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv accept_hostkey=yes
     - name: install pyenv/plugins/python-build
-      sudo_user: root
-      shell: "./install.sh"
+      shell: ./install.sh
       args:
         chdir: /opt/git/pyenv/plugins/python-build
+    - name: run pyenv-installer
+      shell: curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | PYENV_ROOT=/usr/local/pyenv bash
+    - name: copy /etc/profile.d/pyenv.sh
+      copy: src=./src/pyenv.sh dest=/etc/profile.d/pyenv.sh owner=root group=root mode=0644
+    - name: install nodebrew
+      shell: curl -L https://raw.githubusercontent.com/hokaccha/nodebrew/master/nodebrew | NODEBREW_ROOT=/usr/local/nodebrew perl - setup
+    - name: copy /etc/profile.d/nodebrew.sh
+      copy: src=./src/nodebrew.sh dest=/etc/profile.d/nodebrew.sh owner=root group=root mode=0644
+    - name: install ruby 2.2.0
+      shell: bash -lc "rvm --default use --install 2.2.0@global"
+    - name: install python 3.4.3
+      shell: bash -lc "pyenv install 3.4.3"
+    - name: set global python 3.4.3
+      shell: bash -lc "pyenv global 3.4.3"
+    - name: install node 0.12.0
+      shell: bash -lc "nodebrew install-binary v0.12.0"
+    - name: set node v0.12.0
+      shell: bash -lc "nodebrew use v0.12.0"
