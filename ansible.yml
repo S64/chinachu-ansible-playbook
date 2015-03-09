@@ -2,11 +2,16 @@
 - hosts: all
   sudo: yes
   tasks:
-    - name: add epel repository (yum)
+    - name: add epel7 repository (yum)
       yum: name={{item}}
       with_items:
         - http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
-      when: ansible_pkg_mgr == 'yum'
+      when: ansible_pkg_mgr == 'yum' and ansible_lsb.major_release|int == 7
+    - name: add epel6 repository (yum)
+      yum: name={{item}}
+      with_items:
+        - http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+      when: ansible_pkg_mgr == 'yum' and ansible_lsb.major_release|int == 6
     - name: install packages
       action: "{{ansible_pkg_mgr}} name={{item}}"
       with_items:
