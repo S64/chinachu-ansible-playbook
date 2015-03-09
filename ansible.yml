@@ -1,6 +1,7 @@
 ---
-- sudo: yes
-- tasks:
+- hosts: all
+  sudo: yes
+  tasks:
     - name: add epel repository (yum)
       yum: name={{item}}
       with_items:
