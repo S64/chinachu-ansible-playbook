@@ -10,23 +10,43 @@
     - name: install packages
       action: "{{ansible_pkg_mgr}} name={{item}}"
       with_items:
+        - nano
+        - tree
+        - nmap
+        - curl
+        - wget
+    - name: install packages (yum)
+      action: "{{ansible_pkg_mgr}} name={{item}}"
+      with_items:
+        - yum-utils
+        - which
         - "@development"
         - zlib-devel
         - bzip2-devel
         - openssl-devel
         - sqlite-devel
         - readline-devel
-        - yum-utils
-        - which
-        - nano
-        - tree
-        - nmap
-        - curl
-        - wget
+        - yasm-devel
+        - boost-devel
+      when: ansible_pkg_mgr == 'yum'
+    - name: install packages (apt)
+      action: "{{ansible_pkg_mgr}} name={{item}}"
+      with_items:
+        - build-essential
+        - libssl-dev
+        - libboost-all-dev
+        - yasm
+        - libreadline-dev
+        - libsqlite3-dev
+        - libbz2-dev
+        - zlib1g-dev
+        - gnupg2
+        - git
+      when: ansible_pkg_mgr == 'apt'
     - name: add rvm gpg
       shell: gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
     - name: install rvm
-      shell: curl -sSL https://get.rvm.io | bash -s stable
+      shell: bash -lc "curl -sSL https://get.rvm.io | bash -s stable"
     - name: clone pyenv
       git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv accept_hostkey=yes
     - name: install pyenv/plugins/python-build
@@ -34,11 +54,11 @@
       args:
         chdir: /opt/git/pyenv/plugins/python-build
     - name: run pyenv-installer
-      shell: curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | PYENV_ROOT=/usr/local/pyenv bash
+      shell: bash -lc "curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | PYENV_ROOT=/usr/local/pyenv bash"
     - name: copy /etc/profile.d/pyenv.sh
       copy: src=./src/pyenv.sh dest=/etc/profile.d/pyenv.sh owner=root group=root mode=0644
     - name: install nodebrew
-      shell: curl -L https://raw.githubusercontent.com/hokaccha/nodebrew/master/nodebrew | NODEBREW_ROOT=/usr/local/nodebrew perl - setup
+      shell: bash -lc "curl -L https://raw.githubusercontent.com/hokaccha/nodebrew/master/nodebrew | NODEBREW_ROOT=/usr/local/nodebrew perl - setup"
     - name: copy /etc/profile.d/nodebrew.sh
       copy: src=./src/nodebrew.sh dest=/etc/profile.d/nodebrew.sh owner=root group=root mode=0644
     - name: install ruby 2.2.0
@@ -51,3 +71,21 @@
       shell: bash -lc "nodebrew install-binary v0.12.0"
     - name: set node v0.12.0
       shell: bash -lc "nodebrew use v0.12.0"
+    - name: install pcsc-tools (apt)
+      action: "{{ansible_pkg_mgr}} name={{item}}"
+      with_items:
+        - libccid
+        - libpcsclite1
+        - libpcsclite-dev
+        - pcsc-tools
+        - pcscd
+      when: ansible_pkg_mgr == 'apt'
+    - name: download arib25 (c44e16dbb0e2.zip)
+      get_url: url=http://hg.honeyplanet.jp/pt1/archive/c44e16dbb0e2.zip dest=/opt/c44e16dbb0e2.zip
+    - name: unarchive arib25 (c44e16dbb0e2.zip)
+      unarchive: src=/opt/c44e16dbb0e2.zip dest=/opt/arib25
+    - name: add user "chinachu"
+      user: name=chinachu system=yes shell=/bin/bash home=/opt/chinachu createhome=yes
+    - name: clone chinachu
+      sudo_user: chinachu
+      git: repo=git://github.com/kanreisa/Chinachu.git dest=~/chinachu accept_hostkey=yes
