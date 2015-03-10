@@ -10,4 +10,4 @@
     - name: enable docker
       service: name=docker enabled=yes state=started
     - name: install docker-compose
-      pip: name=docker-compose
+      shell: bash -lc "pip install -U docker-compose"
