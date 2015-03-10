@@ -1,0 +1,13 @@
+---
+- hosts: all
+  sudo: yes
+  tasks:
+    - name: install docker (yum)
+      yum: name={{item}}
+      with_items:
+        - docker-io
+      when: ansible_pkg_mgr == 'yum'
+    - name: enable docker
+      service: name=docker enabled=yes state=started
+    - name: install docker-compose
+      pip: name=docker-compose

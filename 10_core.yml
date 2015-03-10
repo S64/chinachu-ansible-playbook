@@ -85,12 +85,20 @@
     - name: install ruby 2.2.0
       shell: bash -lc "rvm --default use --install 2.2.0@global"
       when: not rvm_directory.stat.exists
-    - name: install python 3.4.3
-      shell: bash -lc "pyenv install 3.4.3"
+    - name: install python 2.7.9, 3.4.3
+      shell: bash -lc "pyenv install {{ item }}"
+      with_items:
+        - 2.7.9
+        - 3.4.3
       when: not pyenv_directory.stat.exists
-    - name: set global python 3.4.3
-      shell: bash -lc "pyenv global 3.4.3"
+    - name: set global python 2.7.9
+      shell: bash -lc "pyenv global 2.7.9"
       when: not pyenv_directory.stat.exists
+    - name: install pip packages
+      pip: name={{ item }}
+      with_items:
+        - six
+        - pry
     - name: install node 0.12.0
       shell: bash -lc "nodebrew install-binary v0.12.0"
       when: not nodebrew_directory.stat.exists

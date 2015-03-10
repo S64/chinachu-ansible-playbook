@@ -1,0 +1,10 @@
+---
+- hosts: all
+  sudo: yes
+  tasks:
+    - name: copy /opt/kodi
+      copy: src=./30_kodi dest=/opt/kodi
+    - name: build kodi
+      shell: docker-compose build
+      args:
+        chdir: /opt/kodi
