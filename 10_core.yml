@@ -94,11 +94,8 @@
     - name: set global python 2.7.9
       shell: bash -lc "pyenv global 2.7.9"
       when: not pyenv_directory.stat.exists
-    - name: install pip packages
-      pip: name={{ item }}
-      with_items:
-        - six
-        - pry
+    - name: install six
+      pip: name=six
     - name: install node 0.12.0
       shell: bash -lc "nodebrew install-binary v0.12.0"
       when: not nodebrew_directory.stat.exists
@@ -265,6 +262,10 @@
     - name: clone Chinachu
       sudo_user: chinachu
       git: repo=git://github.com/kanreisa/Chinachu.git dest=~/chinachu accept_hostkey=yes
+    - name: /etc/ld.so.conf
+      shell: echo “/usr/local/lib” >> /etc/ld.so.conf
+    - name: ldconfig
+      shell: ldconfig
     - name: clone Chinachu-IPTV-API-addon
       sudo_user: chinachu
       git: repo=git://github.com/mzyy94/Chinachu-IPTV-API-addon.git dest=~/Chinachu-IPTV-API-addon accept_hostkey=yes
@@ -274,3 +275,30 @@
       with_items:
         - { src: 'api/resource-iptv.json', dest: 'api/resource-iptv.json' }
         - { src: 'api/script-iptv.vm.js', dest: 'api/script-iptv.vm.js' }
+    - name: create chinachu-wui initscript
+      sudo_user: chinachu
+      shell: ./chinachu service wui initscript > ~/chinachu-wui
+      args:
+        chdir: ~/chinachu
+    - name: create chinachu-operator initscript
+      sudo_user: chinachu
+      shell: ./chinachu service operator initscript > ~/chinachu-operator
+      args:
+        chdir: ~/chinachu
+    - name: install chinachu initscript
+      sudo_user: root
+      file: src=/opt/chinachu/{{ item.src }} dest=~/etc/init.d/{{ item.dest }} state=link
+      with_items:
+        - { src: 'chinachu-wui', dest: 'chinachu-wui' }
+        - { src: 'chinachu-operator', dest: 'chinachu-operator' }
+    - name: enable chinachu initscript
+      sudo_user: root
+      service: name={{ item }} enabled=yes state=started
+      with_items:
+        - chinachu-wui
+        - chinachu-operator
+    - name: copy chinachu config
+      copy: src=./src/{{ item }} dest=~/chinachu/{{ item }} owner=chinachu group=chinachu mode=0644 force=yes
+      with_items:
+        - config.json
+        - rules.json

@@ -1,0 +1,62 @@
+{
+  "recordedDir" : "/opt/chinachu/recorded/",
+  "temporaryDir": "/tmp/",
+
+  "wuiUsers": [
+    "akari:bakuhatsu"
+  ],
+
+  "wuiPort"        : 10772,
+  "wuiHost"        : "::",
+  "wuiTlsKeyPath"  : null,
+  "wuiTlsCertPath" : null,
+  "wuiOpenServer"  : true,
+  "wuiOpenPort"    : 20772,
+  "wuiPreviewer"   : true,
+  "wuiStreamer"    : true,
+  "wuiFiler"       : true,
+  "wuiConfigurator": true,
+
+  "recordedFormat": "[<date:yymmdd-HHMM>][<type><channel>][<tuner>]<title>.m2ts",
+
+  "tuners": [
+    {
+      "name"        : "PX-W3PE (asv52202)",
+      "isScrambling": false,
+      "types"       : [ "GR" ],
+      "command"     : "recpt1 --device /dev/asv52202 --b25 --strip <channel> - -"
+    },
+    {
+      "name"        : "PX-W3PE (asv52203)",
+      "isScrambling": false,
+      "types"       : [ "GR" ],
+      "command"     : "recpt1 --device /dev/asv52203 --b25 --strip <channel> - -"
+    },
+    {
+      "name"        : "PX-W3PE (asv52200)",
+      "isScrambling": false,
+      "types"       : [ "BS", "CS" ],
+      "command"     : "recpt1 --device /dev/asv52200 --b25 --strip <channel> - -"
+    },
+    {
+      "name"        : "PX-W3PE (asv52201)",
+      "isScrambling": false,
+      "types"       : [ "BS", "CS" ],
+      "command"     : "recpt1 --device /dev/asv52201 --b25 --strip <channel> - -"
+    }
+  ],
+
+  "channels": [
+    { "type": "GR", "channel": "27" },
+    { "type": "GR", "channel": "26" },
+    { "type": "GR", "channel": "21" },
+    { "type": "GR", "channel": "25" },
+    { "type": "GR", "channel": "22" },
+    { "type": "GR", "channel": "24" },
+    { "type": "GR", "channel": "23" },
+    { "type": "GR", "channel": "33" },
+    { "type": "GR", "channel": "32" },
+    { "type": "GR", "channel": "14" },
+    { "type": "GR", "channel": "28" }
+  ]
+}
