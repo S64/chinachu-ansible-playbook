@@ -7,10 +7,12 @@
 #      with_items:
 #        - http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
 #      when: ansible_distribution == 'CentOS' and ansible_distribution_version.split('.')[0] == '7'
-    - name: add epel6 repository (yum)
+    - name: add epel6, rpmfusion repository (yum)
       yum: name={{item}}
       with_items:
         - http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+        - http://download1.rpmfusion.org/free/el/updates/6/i386/rpmfusion-free-release-6-1.noarch.rpm
+        - http://download1.rpmfusion.org/nonfree/el/updates/6/i386/rpmfusion-nonfree-release-6-1.noarch.rpm
       when: ansible_distribution == 'CentOS' and ansible_distribution_version.split('.')[0] == '6'
     - name: install packages
       action: "{{ansible_pkg_mgr}} name={{item}}"
@@ -59,14 +61,15 @@
     - name: install rvm
       shell: bash -lc "curl -sSL https://get.rvm.io | bash -s stable"
       when: not rvm_directory.stat.exists
+    - stat: path=/usr/local/pyenv
+      register: pyenv_directory
     - name: clone pyenv (python-build)
       git: repo=git://github.com/yyuu/pyenv.git dest=/opt/git/pyenv accept_hostkey=yes
     - name: install pyenv/plugins/python-build
       shell: ./install.sh
       args:
         chdir: /opt/git/pyenv/plugins/python-build
-    - stat: path=/usr/local/pyenv
-      register: pyenv_directory
+      when: not pyenv_directory.stat.exists
     - name: run pyenv-installer
       shell: bash -lc "curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | PYENV_ROOT=/usr/local/pyenv bash"
       when: not pyenv_directory.stat.exists
@@ -183,21 +186,29 @@
       shell: make install
       args:
         chdir: /opt/chinachu/arib25/pt1-c44e16dbb0e2/arib25
+    - stat: path=~/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit/asv5220_dtv.ko
+      sudo_user: chinachu
+      register: ko_asv5220_dtv
     - name: download PX-W3PE driver
       sudo_user: chinachu
       get_url: url=http://plex-net.co.jp/plex/px-w3pe/PX-W3PE_LinuxDriver_ver.1.0.0.zip dest=~/PX-W3PE_LinuxDriver_ver.1.0.0.zip
+      when: not ko_asv5220_dtv.stat.exists
     - name: unzip PX-W3PE driver (PX-W3PE_LinuxDriver_ver.1.0.0.zip)
       sudo_user: chinachu
       shell: unzip -n -d ~/ ~/PX-W3PE_LinuxDriver_ver.1.0.0.zip
+      when: not ko_asv5220_dtv.stat.exists
     - name: unzip PX-W3PE 64bit driver (Driver/64bit.tar.gz)
       sudo_user: chinachu
       shell: tar xvzf ~/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit.tar.gz -C ~/PX-W3PE_LinuxDriver_ver.1.0.0/Driver
+      when: not ko_asv5220_dtv.stat.exists
     - name: install PX-W3PE driver (asv5220_dtv.ko)
       sudo_user: root
       shell: insmod /opt/chinachu/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit/asv5220_dtv.ko
+      when: not ko_asv5220_dtv.stat.exists
     - name: cp asv5220_dtv.ko to /usr/lib64
       sudo_user: root
       shell: cp --update /opt/chinachu/PX-W3PE_LinuxDriver_ver.1.0.0/Driver/64bit/asv5220_dtv.ko /usr/lib64/asv5220_dtv.ko
+      when: not ko_asv5220_dtv.stat.exists
     - name: copy asv5220_dtv.modules
       sudo_user: root
       copy: src=./src/asv5220_dtv.modules dest=/etc/sysconfig/modules/asv5220_dtv.modules owner=root group=root mode=0755
@@ -243,6 +254,15 @@
       args:
         chdir: /opt/chinachu/recpt1/recpt1
       when: not recpt1_binary.stat.exists
-    - name: clone chinachu
+    - name: clone Chinachu
       sudo_user: chinachu
       git: repo=git://github.com/kanreisa/Chinachu.git dest=~/chinachu accept_hostkey=yes
+    - name: clone Chinachu-IPTV-API-addon
+      sudo_user: chinachu
+      git: repo=git://github.com/mzyy94/Chinachu-IPTV-API-addon.git dest=~/Chinachu-IPTV-API-addon accept_hostkey=yes
+    - name: install Chinachu-IPTV-API-addon
+      sudo_user: chinachu
+      file: src=~/Chinachu-IPTV-API-addon/{{ item.src }} dest=~/chinachu/{{ item.dest }} state=link
+      with_items:
+        - { src: 'api/resource-iptv.json', dest: 'api/resource-iptv.json' }
+        - { src: 'api/script-iptv.vm.js', dest: 'api/script-iptv.vm.js' }
