@@ -6,7 +6,7 @@ RUN add-apt-repository ppa:team-xbmc/ppa -y
 RUN apt-get update -y
 RUN apt-get install -y kodi
 
-ENV DISPLAY
+ENV DISPLAY :0.0
 VOLUME ["/tmp/.X11-unix"]
 
 CMD ["/bin/bash", "-li"]
