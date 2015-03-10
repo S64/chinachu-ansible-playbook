@@ -94,8 +94,6 @@
     - name: set global python 2.7.9
       shell: bash -lc "pyenv global 2.7.9"
       when: not pyenv_directory.stat.exists
-    - name: install six
-      pip: name=six
     - name: install node 0.12.0
       shell: bash -lc "nodebrew install-binary v0.12.0"
       when: not nodebrew_directory.stat.exists
@@ -217,6 +215,21 @@
     - name: copy asv5220_dtv.modules
       sudo_user: root
       copy: src=./src/asv5220_dtv.modules dest=/etc/sysconfig/modules/asv5220_dtv.modules owner=root group=root mode=0755
+    - stat: path=/opt/chinachu/startup.sh
+      sudo_user: chinachu
+      register: startup_script
+    - name: copy startup.sh
+      sudo_user: chinachu
+      copy: src=./src/startup.sh dest=/opt/chinachu/startup.sh owner=chinachu group=chinachu mode=0755
+      when: not startup_script.stat.exists
+    - name: register startup.sh
+      sudo_user: root
+      shell: echo 'bash /opt/chinachu/startup.sh' >> /etc/rc.d/rc.local
+      when: not startup_script.stat.exists
+    - name: enable rc.local
+      sudo_user: root
+      shell: chmod u+x /etc/rc.d/rc.local
+      when: not startup_script.stat.exists
     - stat: path=./src/recpt1
       delegate_to: 127.0.0.1
       register: local_recpt1_binary
@@ -263,7 +276,7 @@
       sudo_user: chinachu
       git: repo=git://github.com/kanreisa/Chinachu.git dest=~/chinachu accept_hostkey=yes
     - name: /etc/ld.so.conf
-      shell: echo “/usr/local/lib” >> /etc/ld.so.conf
+      shell: bash -c "echo /usr/local/lib' >> /etc/ld.so.conf"
     - name: ldconfig
       shell: ldconfig
     - name: clone Chinachu-IPTV-API-addon
@@ -275,30 +288,40 @@
       with_items:
         - { src: 'api/resource-iptv.json', dest: 'api/resource-iptv.json' }
         - { src: 'api/script-iptv.vm.js', dest: 'api/script-iptv.vm.js' }
-    - name: create chinachu-wui initscript
+    - name: create chinachu initscript
       sudo_user: chinachu
-      shell: ./chinachu service wui initscript > ~/chinachu-wui
+      shell: ./chinachu service {{ item }} initscript > ~/chinachu-{{ item }}
       args:
         chdir: ~/chinachu
-    - name: create chinachu-operator initscript
+      with_items:
+        - wui
+        - operator
+    - name: chmod chinachu initscript
       sudo_user: chinachu
-      shell: ./chinachu service operator initscript > ~/chinachu-operator
-      args:
-        chdir: ~/chinachu
-    - name: install chinachu initscript
+      file: path=/opt/chinachu/{{ item }} state=touch mode=0755
+      with_items:
+        - chinachu-wui
+        - chinachu-operator
+    - name: copy chinachu initscript
       sudo_user: root
-      file: src=/opt/chinachu/{{ item.src }} dest=~/etc/init.d/{{ item.dest }} state=link
+      file: src=/opt/chinachu/{{ item.src }} dest=/etc/init.d/{{ item.dest }} state=link
       with_items:
         - { src: 'chinachu-wui', dest: 'chinachu-wui' }
         - { src: 'chinachu-operator', dest: 'chinachu-operator' }
+    - name: install chinachu initscript
+      sudo_user: root
+      shell: chkconfig --add {{ item }}
+      with_items:
+        - chinachu-wui
+        - chinachu-operator
     - name: enable chinachu initscript
       sudo_user: root
-      service: name={{ item }} enabled=yes state=started
+      shell: chkconfig {{ item }} on
       with_items:
         - chinachu-wui
         - chinachu-operator
     - name: copy chinachu config
-      copy: src=./src/{{ item }} dest=~/chinachu/{{ item }} owner=chinachu group=chinachu mode=0644 force=yes
+      copy: src=./src/{{ item }} dest=/opt/chinachu/chinachu/{{ item }} owner=chinachu group=chinachu mode=0644 force=yes
       with_items:
         - config.json
         - rules.json
