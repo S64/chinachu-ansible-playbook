@@ -3,8 +3,6 @@
   sudo: yes
   tasks:
     - name: copy /opt/kodi
-      copy: src=./30_kodi dest=/opt/kodi
+      copy: src=./src/kodi dest=/opt
     - name: build kodi
-      shell: docker-compose build
-      args:
-        chdir: /opt/kodi
+      shell: bash -lc "cd /opt/kodi && docker-compose build"
