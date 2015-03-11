@@ -2,12 +2,46 @@
 - hosts: all
   sudo: yes
   tasks:
-    - name: copy /opt/kodi
-      copy: src=./src/kodi dest=/opt
-    - name: build kodi
-      shell: bash -lc "cd /opt/kodi && docker build --tag=kodi ."
-    - name: chmod run.sh
-      file: path=/opt/kodi/run.sh state=touch mode=0755
-    - name: install kmod-alsa (testing)
-      yum: name=kmod-alsa enablerepo=elrepo-testing
-      when: ansible_distribution == 'CentOS' and ansible_distribution_version.split('.')[0] == '6'
+    - name: add user "kodi"
+      user: name=kodi system=yes shell=/bin/bash home=/opt/kodi createhome=yes
+    - name: clone xbmc/xbmc (kodi)
+      sudo_user: kodi
+      git: repo=git://github.com/xbmc/xbmc.git dest=/opt/kodi/src accept_hostkey=yes
+    - name: install packages
+      script: ./src/kodi/install_packages.sh
+    - name: make JsonSchemaBuilder
+      sudo_user: kodi
+      shell: make -C tools/depends/native/JsonSchemaBuilder/
+      args:
+        chdir: /opt/kodi/src
+    - name: copy JsonSchemaBuilder
+      shell: cp tools/depends/native/JsonSchemaBuilder/bin/JsonSchemaBuilder /usr/local/bin
+      args:
+        chdir: /opt/kodi/src
+    - name: chmod JsonSchemaBuilder
+      file: path=/usr/local/bin/JsonSchemaBuilder state=touch mode=0775
+    - name: sed afp.h
+      shell: sed --in-place=BAK 's#<\(afp_protocol\|libafpclient\).h>#<afpfs-ng/\1.h>#' /usr/include/afpfs-ng/afp.h
+      args:
+        chdir: /opt/kodi/src
+    - name: ln libmysqlclient.so
+      shell: bash -c "ln -s /usr/lib/mysql/libmysqlclient.so.??.0.0 /usr/lib/libmysqlclient.so"
+    - name: bootstrap
+      sudo_user: kodi
+      shell: ./bootstrap
+      args:
+        chdir: /opt/kodi/src
+    - name: configure
+      sudo_user: kodi
+      shell: ./configure --with-lirc-device=/var/run/lirc/lircd
+      args:
+        chdir: /opt/kodi/src
+    - name: make
+      sudo_user: kodi
+      shell: make
+      args:
+        chdir: /opt/kodi/src
+    - name: install
+      shell: make install
+      args:
+        chdir: /opt/kodi/src
