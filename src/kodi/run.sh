@@ -1,3 +1,8 @@
 #!/bin/bash
-CURRENT=$(cd $(dirname $0) && pwd)
+CURRENT=`dirname $0`
+pushd $CURRENT
+
+xhost +
 docker-compose up --no-recreate
+
+popd

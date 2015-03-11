@@ -7,12 +7,13 @@
 #      with_items:
 #        - http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
 #      when: ansible_distribution == 'CentOS' and ansible_distribution_version.split('.')[0] == '7'
-    - name: add epel6, rpmfusion repository (yum)
+    - name: add epel6, rpmfusion, elrepo repository (yum)
       yum: name={{item}}
       with_items:
         - http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
         - http://download1.rpmfusion.org/free/el/updates/6/i386/rpmfusion-free-release-6-1.noarch.rpm
         - http://download1.rpmfusion.org/nonfree/el/updates/6/i386/rpmfusion-nonfree-release-6-1.noarch.rpm
+        - http://www.elrepo.org/elrepo-release-6-6.el6.elrepo.noarch.rpm
       when: ansible_distribution == 'CentOS' and ansible_distribution_version.split('.')[0] == '6'
     - name: install packages
       action: "{{ansible_pkg_mgr}} name={{item}}"
