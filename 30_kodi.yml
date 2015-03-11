@@ -5,7 +5,7 @@
     - name: copy /opt/kodi
       copy: src=./src/kodi dest=/opt
     - name: build kodi
-      shell: bash -lc "cd /opt/kodi && docker-compose build"
+      shell: bash -lc "cd /opt/kodi && docker build --tag=kodi ."
     - name: chmod run.sh
       file: path=/opt/kodi/run.sh state=touch mode=0755
     - name: install kmod-alsa (testing)

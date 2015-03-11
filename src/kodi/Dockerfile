@@ -10,6 +10,6 @@ RUN apt-get install -y kodi-pvr-iptvsimple
 RUN apt-get install -y kodi-audioencoder-vorbis kodi-audioencoder-lame kodi-audioencoder-flac
 
 ENV DISPLAY :0.0
-VOLUME ["/tmp/.X11-unix", "/root/volume"]
+VOLUME ["/tmp/.X11-unix", "/dev/snd", "/root/volume"]
 
 CMD ["/usr/bin/kodi"]

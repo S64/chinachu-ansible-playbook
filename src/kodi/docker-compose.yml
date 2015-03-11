@@ -7,3 +7,5 @@ kodi:
   volumes:
     - /tmp/.X11-unix:/tmp/.X11-unix
     - ../../volumes/kodi:/root/volume
+  devices:
+    - /dev/snd:/dev/snd
