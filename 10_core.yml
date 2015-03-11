@@ -280,7 +280,7 @@
       sudo_user: chinachu
       git: repo=git://github.com/kanreisa/Chinachu.git dest=~/chinachu accept_hostkey=yes
     - name: /etc/ld.so.conf
-      shell: bash -c "echo /usr/local/lib' >> /etc/ld.so.conf"
+      shell: bash -c "echo /usr/local/lib >> /etc/ld.so.conf"
     - name: ldconfig
       shell: ldconfig
     - name: clone Chinachu-IPTV-API-addon
